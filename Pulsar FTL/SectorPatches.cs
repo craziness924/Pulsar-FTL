@@ -33,7 +33,7 @@ namespace Pulsar_FTL
             };
                 List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
             {
-                    /*
+
                 new CodeInstruction(OpCodes.Newobj, AccessTools.Constructor(typeof(PLSectorInfo))),
                 new CodeInstruction(OpCodes.Stloc_S, walter), //4 is walter
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
@@ -42,9 +42,9 @@ namespace Pulsar_FTL
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Ldc_I4_0),
                 new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_Visited", new Type[] { typeof(bool)})),
-                new CodeInstruction(OpCodes.Ldc_R4, 0.1f),
+                new CodeInstruction(OpCodes.Ldc_R4, -.7f),
                 new CodeInstruction(OpCodes.Stloc_S, walterX), //5 is epic (x position of sector)
-                new CodeInstruction(OpCodes.Ldc_R4, -0.04f),
+                new CodeInstruction(OpCodes.Ldc_R4, 0f),
                 new CodeInstruction(OpCodes.Stloc_S, walterY), //6 is epic2 (y position of sector)
                 new CodeInstruction(OpCodes.Ldc_R4, 0f),
                 new CodeInstruction(OpCodes.Stloc_S, walterZ), //7 is epic3 (z position of sector) 
@@ -52,8 +52,11 @@ namespace Pulsar_FTL
                 new CodeInstruction(OpCodes.Ldloc_S, walterX),
                 new CodeInstruction(OpCodes.Ldloc_S, walterY),
                 new CodeInstruction(OpCodes.Ldloc_S, walterZ),
-                new CodeInstruction(OpCodes.Newobj, AccessTools.Constructor(typeof(Vector3), new Type[] { typeof(float), typeof(float), typeof(float)  })), //may need to add parameters??
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_Position", new Type[] { typeof(UnityEngine.Vector3)})),
+                new CodeInstruction(OpCodes.Newobj, AccessTools.Constructor(typeof(Vector3), new Type[] { typeof(float), typeof(float), typeof(float) })),//may need to add parameters??
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Vector3), "op_Multiply", new Type[] { typeof(Vector3), typeof(float) } )),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_Position", new Type[] { typeof(Vector3) })),
                 new CodeInstruction(OpCodes.Ldarg_0),
             //    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")),
             //    new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Vector3), "op_Multiply")),
@@ -84,13 +87,13 @@ namespace Pulsar_FTL
                 new CodeInstruction(OpCodes.Ldc_I4_0),
                 new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_IsPartOfLongRangeWarpNetwork", new Type[] { typeof(bool)})),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
-                new CodeInstruction(OpCodes.Ldstr, "Walter"),
+                new CodeInstruction(OpCodes.Ldstr, "Rebel Base"),
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(PLSectorInfo), "Name")),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Ldc_I4_0),
                 new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_VisualIndication", new Type[] { typeof(ESectorVisualIndication)})),
                 // end walter sector generator!
-                */
+                
                 // start boss sector generator!
                 new CodeInstruction(OpCodes.Newobj, AccessTools.Constructor(typeof(PLSectorInfo))),
                 new CodeInstruction(OpCodes.Stloc_S, boss), //object of sector
@@ -111,10 +114,14 @@ namespace Pulsar_FTL
                 new CodeInstruction(OpCodes.Ldloc_S, bossY),
                 new CodeInstruction(OpCodes.Ldloc_S, bossZ),
                 new CodeInstruction(OpCodes.Newobj, AccessTools.Constructor(typeof(Vector3), new Type[] { typeof(float), typeof(float), typeof(float)  })),
-                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_Position", new Type[] { typeof(UnityEngine.Vector3)})),
                 new CodeInstruction(OpCodes.Ldarg_0),
-            //    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")), uncomment if you'd like to multiply position by galaxy scale, may not work I removed it before bug fixing
-            //    new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Vector3), "op_Multiply")),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Vector3), "op_Multiply", new Type[] { typeof(Vector3), typeof(float) } )),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_Position", new Type[] { typeof(Vector3) })),
+                
+           //   new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")), // uncomment if you'd like to multiply position by galaxy scale, may not work I removed it before bug fixing
+           //   new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Vector3), "op_Multiply")),
+                new CodeInstruction(OpCodes.Ldarg_0),
                 new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_AllSectorInfos")),
                 new CodeInstruction(OpCodes.Ldc_I4, 0x4E21),
                 new CodeInstruction(OpCodes.Ldloc_S, boss),
@@ -150,6 +157,7 @@ namespace Pulsar_FTL
             };
                 return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.AFTER, HarmonyHelpers.CheckMode.NONNULL);
             }
+
             // this will setup moving the CU hub to a far off place idk
             [HarmonyPatch(typeof(PLGalaxy), "CreateDefaultSector")]
             internal class CUHubMover
@@ -186,18 +194,17 @@ namespace Pulsar_FTL
                     };
                     List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
                     {
-                        // feel free to add back in the gen scale multipliers, not a big fan of it tho.
                         new CodeInstruction(OpCodes.Ldc_R4, -.80f), //new x position
                         new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")),
-                        new CodeInstruction(OpCodes.Ldc_R4, .02f),
+                        new CodeInstruction(OpCodes.Ldc_R4, .05f),
                         new CodeInstruction(OpCodes.Mul),
                         new CodeInstruction(OpCodes.Add),
                         new CodeInstruction(OpCodes.Stloc_1),
                         new CodeInstruction(OpCodes.Ldc_R4, 0.3f), //new y position
                         new CodeInstruction(OpCodes.Ldarg_0),
                         new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")),
-                        new CodeInstruction(OpCodes.Ldc_R4, .02f),
+                        new CodeInstruction(OpCodes.Ldc_R4, .05f),
                         new CodeInstruction(OpCodes.Mul),
                         new CodeInstruction(OpCodes.Sub),
                         new CodeInstruction(OpCodes.Stloc_2),
@@ -208,9 +215,90 @@ namespace Pulsar_FTL
                 }
 
             }
-            /*
+        }
+        [HarmonyPatch(typeof(PLFactionInfo_Infected), "CreateStartingPoints")]
+        internal class InfectedStartingPoint
+        {
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                PLGalaxy plgalaxy = new PLGalaxy();
+                PLFactionInfo_Infected plfactioninfoinfected = new PLFactionInfo_Infected();
+                PLFactionInfo pLFactioninfo = new PLFactionInfo();
+                int num = 5;
+                for (int i = 0; i < num; i++)
+                {
+                    for (int j = 0; j < 1200; j++)
+                    {
+                        PLSectorInfo randomFreeSectorInfo = PLServer.GetSectorWithID(20000);
+                        if (randomFreeSectorInfo != null && (j > 1000 || Vector2.SqrMagnitude(randomFreeSectorInfo.Position) > 0.2f * plgalaxy.GenGalaxyScale * UnityEngine.Random.Range(1f, 2f)))
+                        {
+                            randomFreeSectorInfo.MySPI.Faction = 4;
+                            randomFreeSectorInfo.LockedToFaction = true;
+                            randomFreeSectorInfo.FactionStrength = 200f * plgalaxy.GenerationSettings.InfectionInitialStrength;
+                            plfactioninfoinfected.StartingPoints.Add(randomFreeSectorInfo);
+                            using (List<PLSectorInfo>.Enumerator enumerator = plgalaxy.GridSearch_FindSectorsWithinRange(randomFreeSectorInfo.Position, 0.0016f, randomFreeSectorInfo).GetEnumerator())
+                            {
+                                while (enumerator.MoveNext())
+                                {
+                                    PLSectorInfo plsectorInfo = enumerator.Current;
+                                    if (plsectorInfo != null && plsectorInfo.MySPI.Faction == -1)
+                                    {
+                                        plsectorInfo.MySPI.Faction = 4;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(PLFactionInfo_Infected), "OnSectorAcquired")]
+        class InfectedNameChanger
+        {
+            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                List<CodeInstruction> TargetSequence = new List<CodeInstruction>()
+                    {
+                        new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "ClearAndRemovePSIs")),
+                        new CodeInstruction(OpCodes.Ldarg_1),
+                        new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "ServerSetChanged")),
+                    };
+                List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
+                    {
+                        new CodeInstruction(OpCodes.Ldarg_1),
+                        new CodeInstruction(OpCodes.Ldstr, "Rebels"), 
+                        new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(PLSectorInfo), "Name")),
+                    };
+                return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.AFTER, HarmonyHelpers.CheckMode.NONNULL);
+            }
+        }
+        /*
+        [HarmonyPatch(typeof(PLGalaxy), "CreateExoticShops")]
+        internal class FlagshipStronker
+        {
+            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                List<CodeInstruction> TargetSequence = new List<CodeInstruction>()
+                {
+                    new CodeInstruction(OpCodes.Ldloc_S, 22),
+                    new CodeInstruction(OpCodes.Ldc_I4_S, 17),
+                    new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_VisualIndication", new Type[] { typeof(ESectorVisualIndication)})),
+                };
+                List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
+                {
+                    new CodeInstruction(OpCodes.Ldloc_S, 22),
+                    new CodeInstruction(OpCodes.Ldc_I4_0),
+                    new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_VisualIndication", new Type[] { typeof(ESectorVisualIndication)})),
+                };
+                return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.REPLACE, HarmonyHelpers.CheckMode.NONNULL);
+            }
+        }
             [HarmonyPatch(typeof(PLGalaxy), "CreateExoticShops")]
-            internal class FlagshipStronker
+            internal class GrimCutLassRemover
             {
                 private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
                 {
@@ -228,27 +316,7 @@ namespace Pulsar_FTL
                     };
                     return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.REPLACE, HarmonyHelpers.CheckMode.NONNULL);
                 }
-            }
-                [HarmonyPatch(typeof(PLGalaxy), "CreateExoticShops")]
-                internal class GrimCutLassRemover
-                {
-                    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-                    {
-                        List<CodeInstruction> TargetSequence = new List<CodeInstruction>()
-                        {
-                            new CodeInstruction(OpCodes.Ldloc_S, 22),
-                            new CodeInstruction(OpCodes.Ldc_I4_S, 17),
-                            new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_VisualIndication", new Type[] { typeof(ESectorVisualIndication)})),
-                        };
-                        List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
-                        {
-                            new CodeInstruction(OpCodes.Ldloc_S, 22),
-                            new CodeInstruction(OpCodes.Ldc_I4_0),
-                            new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_VisualIndication", new Type[] { typeof(ESectorVisualIndication)})),
-                        };
-                        return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.REPLACE, HarmonyHelpers.CheckMode.NONNULL);
-                    }
-            */
-            }
-        }
+        */
     }
+}
+
