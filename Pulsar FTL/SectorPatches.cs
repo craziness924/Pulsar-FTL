@@ -255,7 +255,24 @@ namespace Pulsar_FTL
                 return false;
             }
         }
+      /*  [HarmonyPatch(typeof(PLStarmap), "ShouldShowSector")]
+        class StarmapBlinder
+        {
+            [HarmonyPrefix]
+            public static bool Prefix(PLSectorInfo sectorInfo)
+            {
+                if (sectorInfo != null && sectorInfo.IsThisSectorWithinPlayerWarpRange())
+                {
+                    bool shouldshow = sectorInfo.VisualIndication == ESectorVisualIndication.GWG && PLServer.Instance != null;
 
+                   // return (sectorInfo.Name != sectorInfo.ID.ToString() || sectorInfo.VisualIndication == ESectorVisualIndication.AOG_MISSIONCHAIN_PRISONBREAK || shouldshow || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR_3 || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR_2 || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR || sectorInfo.VisualIndication == ESectorVisualIndication.ALCHEMIST || sectorInfo.VisualIndication == ESectorVisualIndication.DESERT_HUB || sectorInfo.VisualIndication == ESectorVisualIndication.SWARM_CMDR || sectorInfo.VisualIndication == ESectorVisualIndication.DEATHSEEKER_COMMANDER || sectorInfo.VisualIndication == ESectorVisualIndication.INTREPID_SECTOR_CMDR || sectorInfo.VisualIndication == ESectorVisualIndication.SPACE_SCRAPYARD || sectorInfo.VisualIndication == ESectorVisualIndication.AOG_HUB || sectorInfo.VisualIndication == ESectorVisualIndication.ANCIENT_SENTRY || sectorInfo.VisualIndication == ESectorVisualIndication.GENERAL_STORE || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC1 || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC2 || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC3 || sectorInfo.VisualIndication == ESectorVisualIndication.WARP_NETWORK_STATION || PLServer.Instance.m_ShipCourseGoals.Contains(sectorInfo.ID) || sectorInfo.MissionSpecificID != -1) && (sectorInfo.MissionSpecificID == -1 || PLServer.Instance.HasActiveMissionWithID(sectorInfo.MissionSpecificID)) && sectorInfo.VisualIndication != ESectorVisualIndication.COMET;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        } */
         [HarmonyPatch(typeof(PLFactionInfo_Infected), "OnSectorAcquired")]
         class InfectedNameChanger
         {
@@ -270,12 +287,23 @@ namespace Pulsar_FTL
                 List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
                     {
                         new CodeInstruction(OpCodes.Ldarg_1),
-                        new CodeInstruction(OpCodes.Ldstr, "Rebels"), 
+                        new CodeInstruction(OpCodes.Ldstr, "Rebels"),
                         new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(PLSectorInfo), "Name")),
                     };
                 return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.AFTER, HarmonyHelpers.CheckMode.NONNULL);
             }
         }
+
+        [HarmonyPatch(typeof(PLGalaxy), "SetupLongRangeWarpNetworkSector")]
+        class WarpGridRemover
+        {
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                return false;
+            }
+        }
+        
         /*
         [HarmonyPatch(typeof(PLGalaxy), "CreateExoticShops")]
         internal class FlagshipStronker
