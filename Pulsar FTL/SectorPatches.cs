@@ -42,12 +42,12 @@ namespace Pulsar_FTL
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Ldc_I4_0),
                 new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "set_Visited", new Type[] { typeof(bool)})),
-                new CodeInstruction(OpCodes.Ldc_R4, -.7f),
-                new CodeInstruction(OpCodes.Stloc_S, walterX), //5 is epic (x position of sector)
+                new CodeInstruction(OpCodes.Ldc_R4, -.2f),
+                new CodeInstruction(OpCodes.Stloc_S, walterX),
                 new CodeInstruction(OpCodes.Ldc_R4, 0f),
-                new CodeInstruction(OpCodes.Stloc_S, walterY), //6 is epic2 (y position of sector)
+                new CodeInstruction(OpCodes.Stloc_S, walterY),
                 new CodeInstruction(OpCodes.Ldc_R4, 0f),
-                new CodeInstruction(OpCodes.Stloc_S, walterZ), //7 is epic3 (z position of sector) 
+                new CodeInstruction(OpCodes.Stloc_S, walterZ),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Ldloc_S, walterX),
                 new CodeInstruction(OpCodes.Ldloc_S, walterY),
@@ -61,21 +61,21 @@ namespace Pulsar_FTL
             //    new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_GenGalaxyScale")),
             //    new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Vector3), "op_Multiply")),
                 new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLGalaxy), "m_AllSectorInfos")),
-                new CodeInstruction(OpCodes.Ldc_I4, 0x4E20),
+                new CodeInstruction(OpCodes.Ldc_I4, 20000),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Dictionary<int, PLSectorInfo>), "Add")),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
-                new CodeInstruction(OpCodes.Ldc_I4, 0x4E20),
+                new CodeInstruction(OpCodes.Ldc_I4, 20000),
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(PLSectorInfo), "ID")),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Ldarg_0),
                 new CodeInstruction(OpCodes.Ldloca_S, walter),
-                new CodeInstruction(OpCodes.Ldc_I4, 0x4E20),
+                new CodeInstruction(OpCodes.Ldc_I4, 20000),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(SectorProceduralInfo), "Create")),
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(PLSectorInfo), "MySPI")),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PLSectorInfo), "MySPI")),
-                new CodeInstruction(OpCodes.Ldc_I4_4),
+                new CodeInstruction(OpCodes.Ldc_I4_2),
                 new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(SectorProceduralInfo), "Faction")),
                 new CodeInstruction(OpCodes.Ldloc_S, walter),
                 new CodeInstruction(OpCodes.Ldc_R4, 7800f),
@@ -216,8 +216,117 @@ namespace Pulsar_FTL
 
             }
         }
+        [HarmonyPatch(typeof(PLFactionInfo_Infected), "OnSectorAcquired")]
+        class InfectedNameChanger
+        {
+            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                List<CodeInstruction> TargetSequence = new List<CodeInstruction>()
+                    {
+                        new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "ClearAndRemovePSIs")),
+                        new CodeInstruction(OpCodes.Ldarg_1),
+                        new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "ServerSetChanged")),
+                    };
+                List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
+                    {
+                        new CodeInstruction(OpCodes.Ldarg_1),
+                        new CodeInstruction(OpCodes.Ldstr, "Rebels"),
+                        new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(PLSectorInfo), "Name")),
+                    };
+                return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.AFTER, HarmonyHelpers.CheckMode.NONNULL);
+            }
+        }
+        [HarmonyPatch(typeof(PLFactionInfo_WD), "CreateStartingPoints")]
+        internal class WDStartingPoint // adds the WD Hub and the surrounding areas
+        {
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                PLGalaxy plgalaxy = new PLGalaxy();
+                PLFactionInfo_WD plFactionInfoWD = new PLFactionInfo_WD();
+                PLFactionInfo pLFactioninfo = new PLFactionInfo();
+                int num = 200;
+                for (int i = 0; i < num; i++)
+                {
+                    for (int j = 0; j < 1200; j++)
+                    {
+                        PLSectorInfo randomFreeSectorInfo = PLServer.GetSectorWithID(20000);
+                        if (randomFreeSectorInfo != null && (j > 1000 || Vector2.SqrMagnitude(randomFreeSectorInfo.Position) > 0.2f * plgalaxy.GenGalaxyScale * UnityEngine.Random.Range(1f, 2f)))
+                        {
+                            randomFreeSectorInfo.MySPI.Faction = 2;
+                            randomFreeSectorInfo.LockedToFaction = true;
+                            randomFreeSectorInfo.FactionStrength = 200f * plgalaxy.GenerationSettings.InfectionInitialStrength;
+                            plFactionInfoWD.StartingPoints.Add(randomFreeSectorInfo);
+                            using (List<PLSectorInfo>.Enumerator enumerator = plgalaxy.GridSearch_FindSectorsWithinRange(randomFreeSectorInfo.Position, 0.0016f, randomFreeSectorInfo).GetEnumerator())
+                            {
+                                while (enumerator.MoveNext())
+                                {
+                                    PLSectorInfo plsectorInfo = enumerator.Current;
+                                    if (plsectorInfo != null && plsectorInfo.MySPI.Faction == -1)
+                                    {
+                                        plsectorInfo.MySPI.Faction = 2;
+                                        plsectorInfo.Name = "Rebels";
+                                        PulsarPluginLoader.Utilities.Logger.Info(plsectorInfo.ID.ToString() + " has been converted to the Rebels!");
+                                    }
+                                    //if (plsectorInfo != null)
+                                    //{
+                                    //    PLServer.Instance.AllPSIs.Add(new PLPersistantShipInfo(EShipType.E_INFECTED_CARRIER, 4, randomFreeSectorInfo, 0, false, false, false, -1, -1));
+                                    //}
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+        [HarmonyPatch(typeof(PLFactionInfo), "ShouldTakeSector")]
+        class WDTakesAllSectors // changes result of ShouldTakeSector to true if it's W.D.
+        {
+            static void Postfix(PLSectorInfo mySector, PLSectorInfo otherSector, PLFactionInfo otherFaction, ref bool __result)
+            {
+                if (!__result)
+                {
+                    if (mySector.MySPI.Faction == 2 && mySector.MySPI.Faction != otherSector.MySPI.Faction)
+                    {
+                        __result = true;
+                        otherSector.Name = "Rebels";
+                        return;
+                    }
+                    else if (otherSector.MySPI.Faction == 2)
+                    {
+                        __result = false;
+                        return;
+                    }
+                    return;
+                }
+            }
+        }
+        [HarmonyPatch(typeof(PLFactionInfo), "OnSectorAcquired")]
+        class WDSectorAcquiredNameChanger // changes the name of each acquired sector
+        {
+            static void Postfix(PLSectorInfo inSector)
+            {
+                PLEncounterManager.Instance.ClearPersistantEncounterInstanceForSector(inSector.ID);
+                PulsarPluginLoader.Utilities.Logger.Info(inSector.ID.ToString());
+                if (inSector.ID == 2)
+                {
+                    inSector.Name = "Rebels";
+                }
+            }
+        }
+        [HarmonyPatch(typeof(PLGalaxy), "SetupLongRangeWarpNetworkSector")]
+        class WarpGridRemover // removes all long range warp network stations
+        {
+            [HarmonyPrefix]
+            public static bool Prefix()
+            {
+                return false;
+            }
+        }
         [HarmonyPatch(typeof(PLFactionInfo_Infected), "CreateStartingPoints")]
-        internal class InfectedStartingPoint
+        internal class InfectedStartingPoint // removes all infected sectors
         {
             [HarmonyPrefix]
             public static bool Prefix()
@@ -225,7 +334,7 @@ namespace Pulsar_FTL
                 PLGalaxy plgalaxy = new PLGalaxy();
                 PLFactionInfo_Infected plfactioninfoinfected = new PLFactionInfo_Infected();
                 PLFactionInfo pLFactioninfo = new PLFactionInfo();
-                int num = 5;
+                int num = 0;
                 for (int i = 0; i < num; i++)
                 {
                     for (int j = 0; j < 1200; j++)
@@ -255,55 +364,27 @@ namespace Pulsar_FTL
                 return false;
             }
         }
-      /*  [HarmonyPatch(typeof(PLStarmap), "ShouldShowSector")]
-        class StarmapBlinder
-        {
-            [HarmonyPrefix]
-            public static bool Prefix(PLSectorInfo sectorInfo)
-            {
-                if (sectorInfo != null && sectorInfo.IsThisSectorWithinPlayerWarpRange())
-                {
-                    bool shouldshow = sectorInfo.VisualIndication == ESectorVisualIndication.GWG && PLServer.Instance != null;
 
-                   // return (sectorInfo.Name != sectorInfo.ID.ToString() || sectorInfo.VisualIndication == ESectorVisualIndication.AOG_MISSIONCHAIN_PRISONBREAK || shouldshow || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR_3 || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR_2 || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR || sectorInfo.VisualIndication == ESectorVisualIndication.ALCHEMIST || sectorInfo.VisualIndication == ESectorVisualIndication.DESERT_HUB || sectorInfo.VisualIndication == ESectorVisualIndication.SWARM_CMDR || sectorInfo.VisualIndication == ESectorVisualIndication.DEATHSEEKER_COMMANDER || sectorInfo.VisualIndication == ESectorVisualIndication.INTREPID_SECTOR_CMDR || sectorInfo.VisualIndication == ESectorVisualIndication.SPACE_SCRAPYARD || sectorInfo.VisualIndication == ESectorVisualIndication.AOG_HUB || sectorInfo.VisualIndication == ESectorVisualIndication.ANCIENT_SENTRY || sectorInfo.VisualIndication == ESectorVisualIndication.GENERAL_STORE || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC1 || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC2 || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC3 || sectorInfo.VisualIndication == ESectorVisualIndication.WARP_NETWORK_STATION || PLServer.Instance.m_ShipCourseGoals.Contains(sectorInfo.ID) || sectorInfo.MissionSpecificID != -1) && (sectorInfo.MissionSpecificID == -1 || PLServer.Instance.HasActiveMissionWithID(sectorInfo.MissionSpecificID)) && sectorInfo.VisualIndication != ESectorVisualIndication.COMET;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        } */
-        [HarmonyPatch(typeof(PLFactionInfo_Infected), "OnSectorAcquired")]
-        class InfectedNameChanger
-        {
-            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            {
-                List<CodeInstruction> TargetSequence = new List<CodeInstruction>()
-                    {
-                        new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "ClearAndRemovePSIs")),
-                        new CodeInstruction(OpCodes.Ldarg_1),
-                        new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(PLSectorInfo), "ServerSetChanged")),
-                    };
-                List<CodeInstruction> InjectedSequence = new List<CodeInstruction>()
-                    {
-                        new CodeInstruction(OpCodes.Ldarg_1),
-                        new CodeInstruction(OpCodes.Ldstr, "Rebels"),
-                        new CodeInstruction(OpCodes.Stfld, AccessTools.Field(typeof(PLSectorInfo), "Name")),
-                    };
-                return HarmonyHelpers.PatchBySequence(instructions, TargetSequence, InjectedSequence, HarmonyHelpers.PatchMode.AFTER, HarmonyHelpers.CheckMode.NONNULL);
-            }
-        }
+        /*  [HarmonyPatch(typeof(PLStarmap), "ShouldShowSector")]
+          class StarmapBlinder
+          {
+              [HarmonyPrefix]
+              public static bool Prefix(PLSectorInfo sectorInfo)
+              {
+                  if (sectorInfo != null && sectorInfo.IsThisSectorWithinPlayerWarpRange())
+                  {
+                      bool shouldshow = sectorInfo.VisualIndication == ESectorVisualIndication.GWG && PLServer.Instance != null;
 
-        [HarmonyPatch(typeof(PLGalaxy), "SetupLongRangeWarpNetworkSector")]
-        class WarpGridRemover
-        {
-            [HarmonyPrefix]
-            public static bool Prefix()
-            {
-                return false;
-            }
-        }
-        
+                     // return (sectorInfo.Name != sectorInfo.ID.ToString() || sectorInfo.VisualIndication == ESectorVisualIndication.AOG_MISSIONCHAIN_PRISONBREAK || shouldshow || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR_3 || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR_2 || sectorInfo.VisualIndication == ESectorVisualIndication.RACING_SECTOR || sectorInfo.VisualIndication == ESectorVisualIndication.ALCHEMIST || sectorInfo.VisualIndication == ESectorVisualIndication.DESERT_HUB || sectorInfo.VisualIndication == ESectorVisualIndication.SWARM_CMDR || sectorInfo.VisualIndication == ESectorVisualIndication.DEATHSEEKER_COMMANDER || sectorInfo.VisualIndication == ESectorVisualIndication.INTREPID_SECTOR_CMDR || sectorInfo.VisualIndication == ESectorVisualIndication.SPACE_SCRAPYARD || sectorInfo.VisualIndication == ESectorVisualIndication.AOG_HUB || sectorInfo.VisualIndication == ESectorVisualIndication.ANCIENT_SENTRY || sectorInfo.VisualIndication == ESectorVisualIndication.GENERAL_STORE || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC1 || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC2 || sectorInfo.VisualIndication == ESectorVisualIndication.EXOTIC3 || sectorInfo.VisualIndication == ESectorVisualIndication.WARP_NETWORK_STATION || PLServer.Instance.m_ShipCourseGoals.Contains(sectorInfo.ID) || sectorInfo.MissionSpecificID != -1) && (sectorInfo.MissionSpecificID == -1 || PLServer.Instance.HasActiveMissionWithID(sectorInfo.MissionSpecificID)) && sectorInfo.VisualIndication != ESectorVisualIndication.COMET;
+                  }
+                  else
+                  {
+                      return false;
+                  }
+              }
+          } */
+
+
         /*
         [HarmonyPatch(typeof(PLGalaxy), "CreateExoticShops")]
         internal class FlagshipStronker
