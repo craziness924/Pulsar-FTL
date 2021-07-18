@@ -286,33 +286,105 @@ namespace Pulsar_FTL
         {
             static void Postfix(PLSectorInfo mySector, PLSectorInfo otherSector, PLFactionInfo otherFaction, ref bool __result)
             {
-                if (!__result)
+                if (!(otherSector.MySPI.Faction == 2))
                 {
-                    if (mySector.MySPI.Faction == 2 && mySector.MySPI.Faction != otherSector.MySPI.Faction)
+                    if (mySector.MySPI.Faction == 2)
                     {
                         __result = true;
                         otherSector.Name = "Rebels";
-                        return;
+                        PLServer.Instance.AllPSIs.Add(new PLPersistantShipInfo(EShipType.E_WDDRONE1, 1, otherSector, 0, false, true, false, -1, -1));
+                        PLEncounterManager.Instance.ClearPersistantEncounterInstanceForSector(otherSector.ID);
+                        PulsarPluginLoader.Utilities.Logger.Info(otherSector.ID.ToString());
+                        if (otherSector.ID == 2)
+                        {
+                            otherSector.Name = "Rebels";
+                            otherSector.Discovered = true;
+                            if (otherSector.VisualIndication == ESectorVisualIndication.NEBULA)
+                            {
+                                otherSector.VisualIndication = ESectorVisualIndication.HIGHROLLERS_STATION;
+                            }
+                            else
+                            {
+                                if (/*UnityEngine.Random.Range(1f, 32f) == 32f*/ true)
+                                {
+                                    otherSector.VisualIndication = ESectorVisualIndication.MINE_FIELD;
+                                }
+                                else
+                                {
+                                    otherSector.VisualIndication = ESectorVisualIndication.NONE;
+                                }
+                            }
+                        }
                     }
-                    else if (otherSector.MySPI.Faction == 2)
+                    else
                     {
                         __result = false;
-                        return;
                     }
-                    return;
+                }
+                else
+                {
+                    __result = false;
                 }
             }
         }
         [HarmonyPatch(typeof(PLFactionInfo), "OnSectorAcquired")]
-        class WDSectorAcquiredNameChanger // changes the name of each acquired sector
+        class WDSectorAcquiredNameChanger // handled in shouldtakesector but it doesnt work unless i add this patch 
         {
             static void Postfix(PLSectorInfo inSector)
             {
                 PLEncounterManager.Instance.ClearPersistantEncounterInstanceForSector(inSector.ID);
-                PulsarPluginLoader.Utilities.Logger.Info(inSector.ID.ToString());
-                if (inSector.ID == 2)
+                //        if (inSector.ID == 2)
+                //        {
+                //            inSector.Name = "Rebels";
+                //            if (inSector.VisualIndication == ESectorVisualIndication.NEBULA)
+                //            {
+                //                inSector.VisualIndication = ESectorVisualIndication.GREEN_NEBULA;
+                //            }
+                //            else
+                //            {
+                //                if (/*UnityEngine.Random.Range(1f, 32f) == 32f*/ true)
+                //                {
+                //                    inSector.VisualIndication = ESectorVisualIndication.MINE_FIELD;
+                //                }
+                //                else
+                //                {
+                //                    inSector.VisualIndication = ESectorVisualIndication.NONE;
+                //                }
+                //            }
+                //        }
+            }
+        }
+        [HarmonyPatch(typeof(PLGalaxy), "GetFactionColorForID")]
+        class WDColorLerper // changes WD Color to run through a lerp like the vanilla infected do
+        {
+            static void Postfix(int inID, ref Color __result)
+            {
+                if (inID == 2)
                 {
-                    inSector.Name = "Rebels";
+                    if (Global.ShouldBlinkStarmapSectors)
+                    {
+                        //__result = Color.Lerp(Global.WDColor, new Color(Color.red.r, Color.red.g, Color.red.b, Mathf.PingPong(Time.time, 1f) * .8f), Time.time % 1f);
+                        //__result = new Color(Mathf.PingPong(Time.time + 5000f, 1f), Mathf.PingPong(Time.time + 10000f, 1f), Mathf.PingPong(Time.time + 15000f, 1f));
+                        __result = new Color(Color.red.r, Color.red.g, Color.red.b, Mathf.PingPong(Time.time, .75f) * .8f + .25f);
+                    }
+                    else
+                    {
+                        __result = Global.WDColor;
+                    }
+                }
+            }
+        }
+        [HarmonyPatch(typeof(PLStarmap), "GetLabelColorForSector")]
+        class NebulaColorBonker // changes the color of nebula when they're controlled by WD
+        {
+            static void Postfix(PLSectorInfo inSector, ref Color __result)
+            {
+                if (inSector.VisualIndication == ESectorVisualIndication.NEBULA && inSector.MySPI.Faction == 2)
+                {
+                    //PLGalaxy pLGalaxy = new PLGalaxy();
+                    //__result = pLGalaxy.GetFactionColorForID(2);
+                    //__result = Color.Lerp(Color.magenta, Color.red * .8f, Time.time % 1f);
+                    __result = new Color(Color.red.r, Color.red.g, Color.red.b, Mathf.PingPong(Time.time, .75f) * .8f + .25f);
                 }
             }
         }
