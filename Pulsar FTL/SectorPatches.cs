@@ -305,7 +305,7 @@ namespace Pulsar_FTL
                             }
                             else
                             {
-                                if (/*UnityEngine.Random.Range(1f, 32f) == 32f*/ true)
+                                if (UnityEngine.Random.Range(1f, 32f) == 32f)
                                 {
                                     otherSector.VisualIndication = ESectorVisualIndication.MINE_FIELD;
                                 }
