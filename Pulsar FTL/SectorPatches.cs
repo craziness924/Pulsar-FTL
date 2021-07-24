@@ -292,13 +292,14 @@ namespace Pulsar_FTL
                     {
                         __result = true;
                         otherSector.Name = "Rebels";
-                        PLServer.Instance.AllPSIs.Add(new PLPersistantShipInfo(EShipType.E_WDDRONE1, 1, otherSector, 0, false, true, false, -1, -1));
                         PLEncounterManager.Instance.ClearPersistantEncounterInstanceForSector(otherSector.ID);
-                        PulsarPluginLoader.Utilities.Logger.Info(otherSector.ID.ToString());
+                        PLServer.Instance.AllPSIs.Add(new PLPersistantShipInfo(EShipType.E_WDDRONE1, 1, otherSector, 0, false, true, false, -1, -1));
+                        PulsarPluginLoader.Utilities.Logger.Info(otherSector.ID.ToString() + " has been converted to the rebels after start!");
                         if (otherSector.ID == 2)
                         {
                             otherSector.Name = "Rebels";
                             otherSector.Discovered = true;
+                            PLEncounterManager.Instance.ClearPersistantEncounterInstanceForSector(otherSector.ID);
                             if (otherSector.VisualIndication == ESectorVisualIndication.NEBULA)
                             {
                                 otherSector.VisualIndication = ESectorVisualIndication.HIGHROLLERS_STATION;
@@ -332,7 +333,7 @@ namespace Pulsar_FTL
         {
             static void Postfix(PLSectorInfo inSector)
             {
-                PLEncounterManager.Instance.ClearPersistantEncounterInstanceForSector(inSector.ID);
+                //PLEncounterManager.Instance.ClearPersistantEncounterInstanceForSector(inSector.ID);
                 //        if (inSector.ID == 2)
                 //        {
                 //            inSector.Name = "Rebels";

@@ -29,7 +29,7 @@ namespace FogOfWar
                             __result = (shouldshowestate || sectorInfo.Discovered);
                             return;
                         }
-                        else if (sectorInfo.MySPI.Faction == crewFactionID)
+                        else if (sectorInfo.MySPI.Faction == crewFactionID || sectorInfo.MySPI.Faction == 0)
                         {
                             __result = (sectorInfo.MissionSpecificID == -1 || PLServer.Instance.HasActiveMissionWithID(sectorInfo.MissionSpecificID));
                             return;
